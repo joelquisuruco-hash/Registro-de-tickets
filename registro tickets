@@ -1,0 +1,909 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#3f3f3f">
+  <title>Registro de Tickets QR</title>
+
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+  <style>
+    :root {
+      --dark: #3f3f3f;
+      --medium: #56595c;
+      --gray: #94969a;
+      --light: #e1e1e1;
+      --bg: #f4f5f6;
+      --green: #26834a;
+      --red: #c0392b;
+      --blue: #315d85;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--dark);
+      font-family: Arial, sans-serif;
+    }
+
+    header {
+      background: var(--dark);
+      color: white;
+      padding: 22px 15px;
+      text-align: center;
+    }
+
+    header h2 {
+      margin: 0 0 7px;
+      font-size: 21px;
+    }
+
+    header p {
+      margin: 0;
+      color: #ddd;
+      font-size: 13px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 20px auto;
+      padding: 0 13px;
+    }
+
+    .card {
+      background: white;
+      padding: 18px;
+      margin-bottom: 16px;
+      border-radius: 10px;
+      box-shadow: 0 2px 7px #00000012;
+    }
+
+    h3 {
+      margin: 0 0 15px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--light);
+      color: var(--medium);
+      font-size: 17px;
+    }
+
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin: 12px 0;
+    }
+
+    button {
+      border: none;
+      background: var(--dark);
+      color: white;
+      padding: 13px 16px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      min-height: 44px;
+    }
+
+    button:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+
+    button.secondary { background: var(--medium); }
+    button.green { background: var(--green); }
+    button.red { background: var(--red); }
+    button.blue { background: var(--blue); }
+
+    input, textarea {
+      width: 100%;
+      padding: 11px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 15px;
+      background: white;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--medium);
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 13px;
+    }
+
+    .field { min-width: 0; }
+
+    #reader {
+      width: 100%;
+      max-width: 480px;
+      margin: 15px auto;
+      overflow: hidden;
+      border-radius: 8px;
+    }
+
+    #reader video {
+      object-fit: cover;
+    }
+
+    #mensaje {
+      display: none;
+      padding: 13px;
+      margin: 12px 0;
+      border-radius: 6px;
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+
+    .success {
+      display: block !important;
+      background: #e5f5e9;
+      color: #216b38;
+    }
+
+    .error {
+      display: block !important;
+      background: #fde9e7;
+      color: #a32d23;
+    }
+
+    .info {
+      display: block !important;
+      background: #e9eef5;
+      color: #354b65;
+    }
+
+    .small {
+      color: #777;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .table-wrap { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    th, td {
+      border-bottom: 1px solid #ddd;
+      padding: 10px;
+      text-align: left;
+    }
+
+    th {
+      background: var(--dark);
+      color: white;
+    }
+
+    .camera-note {
+      background: #f1f2f3;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .status {
+      font-size: 12px;
+      color: var(--gray);
+      margin-top: 8px;
+    }
+
+    @media(max-width: 750px) {
+      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .card { padding: 14px; }
+      .container { margin: 12px auto; }
+    }
+
+    @media(max-width: 480px) {
+      .grid { grid-template-columns: 1fr; }
+
+      button {
+        flex: 1 1 100%;
+      }
+
+      header h2 { font-size: 19px; }
+
+      #reader { max-width: 100%; }
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h2>REGISTRO DE TICKETS QR</h2>
+  <p>Sistema de recepción y control de concentrados</p>
+</header>
+
+<div class="container">
+
+  <section class="card">
+    <h3>1. Lectura del código QR</h3>
+
+    <div class="buttons">
+      <button class="green" id="btnCamara" onclick="iniciarCamara()">
+        📷 Activar cámara
+      </button>
+
+      <button class="secondary" onclick="detenerCamara()">
+        Detener cámara
+      </button>
+    </div>
+
+    <div id="reader"></div>
+
+    <div class="camera-note">
+      Para utilizar la cámara, abre esta página mediante HTTPS y permite
+      el acceso a la cámara cuando el navegador lo solicite.
+      Se recomienda utilizar la cámara trasera del celular.
+    </div>
+
+    <div class="status" id="estadoCamara">
+      Cámara apagada.
+    </div>
+
+    <div style="margin-top:18px">
+      <label>LECTOR QR USB / ENLACE DEL QR</label>
+      <input
+        id="qrInput"
+        type="text"
+        placeholder="Escanea o pega el enlace del QR"
+        autocomplete="off"
+        onkeydown="if(event.key === 'Enter') consultarCodigo()"
+      >
+    </div>
+
+    <div class="buttons">
+      <button class="blue" onclick="consultarCodigo()">
+        Consultar QR
+      </button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h3>2. Cargar imagen o PDF</h3>
+
+    <input
+      type="file"
+      id="archivo"
+      accept="image/*,.pdf,application/pdf"
+    >
+
+    <div class="buttons">
+      <button class="secondary" onclick="procesarArchivo()">
+        Procesar documento OCR
+      </button>
+    </div>
+
+    <p class="small">
+      El documento se almacena en Google Drive y se procesa mediante OCR
+      cuando el servicio avanzado Drive API está habilitado.
+    </p>
+  </section>
+
+  <div id="mensaje"></div>
+
+  <section class="card" id="formulario" style="display:none">
+    <h3>3. Validar y completar información</h3>
+
+    <p class="small">
+      Verifica los datos obtenidos del QR. Puedes modificarlos antes
+      de registrar el ticket.
+    </p>
+
+    <div class="grid" id="campos"></div>
+
+    <div style="margin-top:18px">
+      <label>TEXTO ORIGINAL EXTRAÍDO</label>
+      <textarea id="textoOriginal" rows="5"></textarea>
+    </div>
+
+    <div style="margin-top:15px">
+      <label>URL DEL QR</label>
+      <input id="urlQR" readonly>
+    </div>
+
+    <div style="margin-top:15px">
+      <label>ARCHIVO DRIVE</label>
+      <input id="archivoDrive" readonly>
+    </div>
+
+    <div class="buttons" style="margin-top:20px">
+      <button class="green" id="btnGuardar" onclick="guardar()">
+        Guardar ticket en Sheets
+      </button>
+
+      <button class="secondary" onclick="limpiar()">
+        Limpiar formulario
+      </button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h3>4. Últimos tickets registrados</h3>
+
+    <div class="buttons">
+      <button class="secondary" onclick="actualizarHistorial()">
+        Actualizar registros
+      </button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Ticket</th>
+            <th>Fecha</th>
+            <th>Cliente</th>
+            <th>Guía</th>
+            <th>Lote</th>
+            <th>Peso neto</th>
+          </tr>
+        </thead>
+
+        <tbody id="historial">
+          <tr>
+            <td colspan="6">Sin registros cargados.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+
+<script>
+/*
+ * IMPORTANTE:
+ * Coloca aquí la URL /exec de tu implementación de Apps Script.
+ */
+const API_URL =
+  'https://script.google.com/a/macros/ahkgroup.com/s/AKfycbwxHOSN6MQwSA8W08D9T2cDxhVkh5u_wyUEa2TaROxJ1lw87aWL5Ft3PUVHMXVyoxuMMg/exec';
+
+const CAMPOS = [
+  'N° TICKET',
+  'ESTADO',
+  'FECHA TICKET',
+  'HORA TICKET',
+  'TIPO RECEPCIÓN',
+  'USUARIO INGRESO',
+  'USUARIO SALIDA',
+  'LOTE',
+  'CLIENTE',
+  'PRODUCTOR',
+  'UNIDAD',
+  'FAMILIA',
+  'PRODUCTO',
+  'ORDEN SERVICIO',
+  'PARCELA',
+  'REFERENCIA',
+  'FECHA INGRESO',
+  'HORA INGRESO',
+  'FECHA SALIDA',
+  'HORA SALIDA',
+  'EMPRESA TRANSPORTE',
+  'GUÍA',
+  'PLACA TRACTO',
+  'PLACA CARRETA',
+  'CONDUCTOR',
+  'BREVETE',
+  'PRESENTACIÓN',
+  'PESO BRUTO MINA',
+  'PESO BRUTO LOGISMNSA',
+  'DIFERENCIA BRUTO',
+  'PESO TARA MINA',
+  'PESO TARA LOGISMNSA',
+  'DIFERENCIA TARA',
+  'PESO NETO MINA',
+  'PESO NETO LOGISMNSA',
+  'DIFERENCIA NETO',
+  'OBSERVACIONES'
+];
+
+let lector = null;
+let escaneando = false;
+let ultimoURL = '';
+let procesando = false;
+
+/* --------------------------------------------------
+   MENSAJES
+-------------------------------------------------- */
+
+function mensaje(texto, tipo = 'info') {
+  const el = document.getElementById('mensaje');
+  el.className = tipo;
+  el.textContent = texto;
+  el.style.display = 'block';
+}
+
+function estadoCamara(texto) {
+  document.getElementById('estadoCamara').textContent = texto;
+}
+
+/* --------------------------------------------------
+   COMUNICACIÓN CON APPS SCRIPT
+   JSONP para GET y POST mediante formulario oculto.
+-------------------------------------------------- */
+
+function generarId() {
+  return 'req_' + Date.now() + '_' +
+    Math.random().toString(36).slice(2, 10);
+}
+
+function consultarAPI(parametros) {
+  return new Promise((resolve, reject) => {
+    const callback = 'respuesta_' + generarId().replace(/[^a-zA-Z0-9_]/g, '');
+    const script = document.createElement('script');
+    const timeout = setTimeout(() => {
+      limpiar();
+      reject(new Error('Tiempo de espera agotado al consultar Apps Script.'));
+    }, 25000);
+
+    function limpiar() {
+      clearTimeout(timeout);
+      delete window[callback];
+      script.remove();
+    }
+
+    window[callback] = function(data) {
+      limpiar();
+      if (data && data.ok === false) {
+        reject(new Error(data.error || 'Error en el servidor.'));
+      } else {
+        resolve(data);
+      }
+    };
+
+    const query = new URLSearchParams({
+      ...parametros,
+      callback: callback
+    });
+
+    script.src = API_URL + '?' + query.toString();
+    script.onerror = function() {
+      limpiar();
+      reject(new Error('No se pudo conectar con Apps Script.'));
+    };
+
+    document.body.appendChild(script);
+  });
+}
+
+function enviarPOST(accion, datos) {
+  return new Promise((resolve, reject) => {
+    const id = generarId();
+    const iframe = document.createElement('iframe');
+    const form = document.createElement('form');
+
+    iframe.name = 'api_' + id;
+    iframe.style.display = 'none';
+
+    form.method = 'POST';
+    form.action = API_URL;
+    form.target = iframe.name;
+    form.style.display = 'none';
+
+    agregarCampo(form, 'id', id);
+    agregarCampo(form, 'action', accion);
+
+    if (accion === 'scan') {
+      agregarCampo(form, 'url', datos.url);
+    }
+
+    if (accion === 'save') {
+      agregarCampo(form, 'datos', JSON.stringify(datos));
+    }
+
+    if (accion === 'upload') {
+      agregarCampo(form, 'archivo', JSON.stringify(datos));
+    }
+
+    document.body.appendChild(iframe);
+    document.body.appendChild(form);
+
+    let terminado = false;
+    const limite = Date.now() + 60000;
+
+    function limpiar() {
+      form.remove();
+      iframe.remove();
+    }
+
+    function consultarEstado() {
+      if (terminado) return;
+
+      if (Date.now() > limite) {
+        terminado = true;
+        limpiar();
+        reject(new Error('El servidor no respondió dentro del tiempo esperado.'));
+        return;
+      }
+
+      consultarAPI({
+        action: 'status',
+        id: id
+      }).then(res => {
+        if (res && !res.pendiente) {
+          terminado = true;
+          limpiar();
+          resolve(res);
+        } else {
+          setTimeout(consultarEstado, 1200);
+        }
+      }).catch(() => {
+        setTimeout(consultarEstado, 2000);
+      });
+    }
+
+    form.submit();
+    setTimeout(consultarEstado, 1500);
+  });
+}
+
+function agregarCampo(form, nombre, valor) {
+  const input = document.createElement('input');
+  input.type = 'hidden';
+  input.name = nombre;
+  input.value = valor == null ? '' : valor;
+  form.appendChild(input);
+}
+
+/* --------------------------------------------------
+   CÁMARA DEL CELULAR
+-------------------------------------------------- */
+
+async function iniciarCamara() {
+  if (escaneando) return;
+
+  if (!window.isSecureContext) {
+    mensaje(
+      'La cámara requiere una página HTTPS. Abre la página mediante una dirección segura.',
+      'error'
+    );
+    return;
+  }
+
+  if (!navigator.mediaDevices ||
+      !navigator.mediaDevices.getUserMedia) {
+    mensaje(
+      'Este navegador no permite acceder a la cámara. Prueba con Chrome actualizado.',
+      'error'
+    );
+    return;
+  }
+
+  if (!window.Html5Qrcode) {
+    mensaje('No se pudo cargar el lector QR. Revisa tu conexión.', 'error');
+    return;
+  }
+
+  try {
+    document.getElementById('btnCamara').disabled = true;
+    estadoCamara('Solicitando permiso de cámara...');
+
+    lector = lector || new Html5Qrcode('reader');
+
+    const camaras = await Html5Qrcode.getCameras();
+
+    if (!camaras || !camaras.length) {
+      throw new Error('No se detectó ninguna cámara.');
+    }
+
+    let camaraElegida = camaras.find(c =>
+      /back|rear|environment|trasera|posterior/i.test(c.label)
+    );
+
+    camaraElegida = camaraElegida || camaras[camaras.length - 1];
+
+    await lector.start(
+      camaraElegida.id,
+      {
+        fps: 10,
+        qrbox: function(width, height) {
+          const lado = Math.floor(Math.min(width, height) * 0.75);
+          return { width: lado, height: lado };
+        },
+        aspectRatio: 1
+      },
+      async function(texto) {
+        if (procesando) return;
+        procesando = true;
+
+        document.getElementById('qrInput').value = texto;
+        await detenerCamara();
+        await consultarCodigo();
+        procesando = false;
+      },
+      function() {}
+    );
+
+    escaneando = true;
+    estadoCamara('Cámara activa. Coloca el QR dentro del recuadro.');
+    mensaje('Lector QR activado correctamente.', 'success');
+
+  } catch (error) {
+    escaneando = false;
+    estadoCamara('Cámara apagada.');
+    mensaje(
+      'No se pudo activar la cámara: ' +
+      (error.message || error) +
+      '. Verifica los permisos del navegador.',
+      'error'
+    );
+  } finally {
+    document.getElementById('btnCamara').disabled = false;
+  }
+}
+
+async function detenerCamara() {
+  if (lector && escaneando) {
+    try {
+      await lector.stop();
+    } catch (e) {}
+  }
+
+  escaneando = false;
+  estadoCamara('Cámara apagada.');
+}
+
+/* --------------------------------------------------
+   CONSULTAR QR
+-------------------------------------------------- */
+
+async function consultarCodigo() {
+  const url = document.getElementById('qrInput').value.trim();
+
+  if (!url) {
+    mensaje('Escanea o introduce un enlace QR.', 'error');
+    return;
+  }
+
+  let dominio;
+
+  try {
+    dominio = new URL(url).hostname.toLowerCase();
+  } catch (e) {
+    mensaje('El contenido leído no es un enlace válido.', 'error');
+    return;
+  }
+
+  if (dominio !== 'logim.pe') {
+    mensaje('El QR no pertenece al dominio autorizado logim.pe.', 'error');
+    return;
+  }
+
+  mensaje('Consultando información del ticket...', 'info');
+
+  try {
+    const res = await enviarPOST('scan', { url: url });
+
+    if (!res || !res.ok) {
+      throw new Error(res.error || 'No se pudo consultar el ticket.');
+    }
+
+    ultimoURL = res.url || url;
+    mostrarDatos(res);
+    mensaje(res.mensaje || 'Consulta completada.', 'success');
+
+  } catch (error) {
+    mensaje('Error al consultar: ' + error.message, 'error');
+  }
+}
+
+/* --------------------------------------------------
+   CARGA DE DOCUMENTOS Y OCR
+-------------------------------------------------- */
+
+function procesarArchivo() {
+  const archivo = document.getElementById('archivo').files[0];
+
+  if (!archivo) {
+    mensaje('Selecciona una imagen o PDF.', 'error');
+    return;
+  }
+
+  if (archivo.size > 8 * 1024 * 1024) {
+    mensaje('El archivo supera el límite recomendado de 8 MB.', 'error');
+    return;
+  }
+
+  const lectorArchivo = new FileReader();
+
+  mensaje('Procesando documento. Espera...', 'info');
+
+  lectorArchivo.onload = async function(e) {
+    try {
+      const base64 = e.target.result.split(',')[1];
+
+      const res = await enviarPOST('upload', {
+        base64: base64,
+        nombre: archivo.name,
+        mimeType: archivo.type || 'application/octet-stream'
+      });
+
+      if (!res || !res.ok) {
+        throw new Error(res.error || 'No se pudo procesar el documento.');
+      }
+
+      mostrarDatos(res);
+      mensaje(res.mensaje || 'Documento procesado.', 'success');
+
+    } catch (error) {
+      mensaje('Error OCR: ' + error.message, 'error');
+    }
+  };
+
+  lectorArchivo.onerror = function() {
+    mensaje('No se pudo leer el archivo seleccionado.', 'error');
+  };
+
+  lectorArchivo.readAsDataURL(archivo);
+}
+
+/* --------------------------------------------------
+   FORMULARIO
+-------------------------------------------------- */
+
+function construirFormulario(datos = {}) {
+  const contenedor = document.getElementById('campos');
+  contenedor.innerHTML = '';
+
+  CAMPOS.forEach(campo => {
+    const div = document.createElement('div');
+    div.className = 'field';
+
+    const label = document.createElement('label');
+    label.textContent = campo;
+
+    const input = document.createElement('input');
+    input.dataset.campo = campo;
+    input.value = datos[campo] || '';
+
+    div.appendChild(label);
+    div.appendChild(input);
+    contenedor.appendChild(div);
+  });
+
+  document.getElementById('formulario').style.display = 'block';
+}
+
+function mostrarDatos(res) {
+  construirFormulario(res.campos || {});
+
+  document.getElementById('textoOriginal').value =
+    res.textoOriginal || '';
+
+  document.getElementById('urlQR').value =
+    res.url || ultimoURL || '';
+
+  document.getElementById('archivoDrive').value =
+    res.archivo || '';
+}
+
+function obtenerDatos() {
+  const datos = {};
+
+  document.querySelectorAll('[data-campo]').forEach(input => {
+    datos[input.dataset.campo] = input.value.trim();
+  });
+
+  datos['URL QR'] = document.getElementById('urlQR').value;
+  datos['ARCHIVO DRIVE'] = document.getElementById('archivoDrive').value;
+  datos['TEXTO ORIGINAL'] = document.getElementById('textoOriginal').value;
+
+  return datos;
+}
+
+/* --------------------------------------------------
+   GUARDAR TICKET
+-------------------------------------------------- */
+
+async function guardar() {
+  const datos = obtenerDatos();
+
+  if (!datos['N° TICKET'] && !datos['GUÍA']) {
+    mensaje('Ingresa el número de ticket o la guía.', 'error');
+    return;
+  }
+
+  const boton = document.getElementById('btnGuardar');
+  boton.disabled = true;
+
+  mensaje('Registrando ticket...', 'info');
+
+  try {
+    const res = await enviarPOST('save', datos);
+
+    if (!res || !res.ok) {
+      throw new Error(res.error || 'No se pudo registrar el ticket.');
+    }
+
+    mensaje(res.mensaje || 'Ticket registrado correctamente.', 'success');
+    await actualizarHistorial();
+    limpiar();
+
+  } catch (error) {
+    mensaje('No se pudo guardar: ' + error.message, 'error');
+  } finally {
+    boton.disabled = false;
+  }
+}
+
+/* --------------------------------------------------
+   HISTORIAL
+-------------------------------------------------- */
+
+async function actualizarHistorial() {
+  try {
+    const res = await consultarAPI({ action: 'history' });
+    const datos = res.datos || [];
+    const tbody = document.getElementById('historial');
+
+    tbody.innerHTML = '';
+
+    if (!datos.length) {
+      tbody.innerHTML =
+        '<tr><td colspan="6">No hay registros.</td></tr>';
+      return;
+    }
+
+    datos.forEach(d => {
+      const tr = document.createElement('tr');
+
+      [
+        d['N° TICKET'],
+        d['FECHA TICKET'],
+        d['CLIENTE'],
+        d['GUÍA'],
+        d['LOTE'],
+        d['PESO NETO MINA']
+      ].forEach(valor => {
+        const td = document.createElement('td');
+        td.textContent = valor || '';
+        tr.appendChild(td);
+      });
+
+      tbody.appendChild(tr);
+    });
+
+  } catch (error) {
+    mensaje('Error al consultar historial: ' + error.message, 'error');
+  }
+}
+
+/* --------------------------------------------------
+   LIMPIAR
+-------------------------------------------------- */
+
+function limpiar() {
+  document.getElementById('formulario').style.display = 'none';
+  document.getElementById('qrInput').value = '';
+  document.getElementById('archivo').value = '';
+  document.getElementById('textoOriginal').value = '';
+  document.getElementById('urlQR').value = '';
+  document.getElementById('archivoDrive').value = '';
+
+  ultimoURL = '';
+}
+
+window.addEventListener('load', function() {
+  actualizarHistorial();
+});
+</script>
+
+</body>
+</html>
